@@ -6,23 +6,6 @@ import os
 pygame.init()
 pygame.mixer.init()
 
-# Load sound effects with error handling
-try:
-    jump_sound = pygame.mixer.Sound("jump.wav")
-except pygame.error:
-    jump_sound = None
-try:
-    hit_sound = pygame.mixer.Sound("hit.wav")
-except pygame.error:
-    hit_sound = None
-
-# Load background music
-try:
-    pygame.mixer.music.load("mario.wav")
-except pygame.error:
-    # If loading fails, ignore
-    pass
-
 # Constants
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 800
@@ -51,6 +34,43 @@ ORANGE = (255, 165, 0)
 PURPLE = (128, 0, 128)
 YELLOW = (255, 255, 0)
 BLUE = (0, 0, 255)
+
+# Set display mode before loading images requiring convert/convert_alpha
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Side-Scrolling Game")
+
+# Load menu background image with error handling and alpha support
+try:
+    menu_background = pygame.image.load("load.png").convert_alpha()
+    menu_background = pygame.transform.scale(menu_background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    print("Menu background loaded successfully.")
+except pygame.error as e:
+    print(f"Failed to load menu background: {e}")
+    menu_background = None
+
+# Load end screen background image with error handling and alpha support
+try:
+    end_background = pygame.image.load("background.png").convert_alpha()
+    end_background = pygame.transform.scale(end_background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    print("End screen background loaded successfully.")
+except pygame.error as e:
+    print(f"Failed to load end screen background: {e}")
+    end_background = None
+
+# Load sound effects with error handling
+try:
+    jump_sound = pygame.mixer.Sound("jump.wav")
+except pygame.error:
+    jump_sound = None
+try:
+    hit_sound = pygame.mixer.Sound("hit.wav")
+except pygame.error:
+    hit_sound = None
+
+try:
+    pygame.mixer.music.load("mario.wav")
+except pygame.error:
+    pass
 
 # Load cloud image
 try:
@@ -160,7 +180,7 @@ class Projectile(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.speed = PROJECTILE_SPEED
+        self.speed = PROJECTILE_SPEED 
 
     def update(self):
         self.rect.x += self.speed
@@ -246,7 +266,6 @@ class BossEnemy(pygame.sprite.Sprite):
         self.max_health = 15  # For health bar
 
     def update(self):
-        # Move up and down between 100 and SCREEN_HEIGHT - 150 - GROUND_HEIGHT adjustment
         self.rect.y += self.speed_y
         if self.rect.top <= 100 or self.rect.bottom >= SCREEN_HEIGHT - 150:
             self.speed_y = -self.speed_y
@@ -257,9 +276,9 @@ class BossBullet(pygame.sprite.Sprite):
         super().__init__()
         try:
             self.image = pygame.image.load("bullet.png").convert_alpha()
-            self.image = pygame.transform.scale(self.image, (20, 10))
+            self.image = pygame.transform.scale(self.image, (40, 20))
         except pygame.error:
-            self.image = pygame.Surface((20, 10))
+            self.image = pygame.Surface((40, 20))
             self.image.fill(YELLOW)
         self.rect = self.image.get_rect()
         self.rect.x = x
@@ -285,25 +304,22 @@ class Collectible(pygame.sprite.Sprite):
         self.rect.x = random.randint(100, SCREEN_WIDTH - 100)
         self.rect.y = random.randint(50, SCREEN_HEIGHT - GROUND_HEIGHT - 50)
 
-# Game Functionality
+font = pygame.font.SysFont("Arial", 36)
+small_font = pygame.font.SysFont("Arial", 24)
+
+def draw_text_center(surface, text, font, color, y_offset=0):
+    render = font.render(text, True, color)
+    rect = render.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + y_offset))
+    surface.blit(render, rect)
+
 def main():
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Side-Scrolling Game")
     clock = pygame.time.Clock()
-
-    font = pygame.font.SysFont("Arial", 36)
-    small_font = pygame.font.SysFont("Arial", 24)
-
-    def draw_text_center(text, font, color, y_offset=0):
-        render = font.render(text, True, color)
-        rect = render.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + y_offset))
-        screen.blit(render, rect)
 
     # Game states
     STATE_START = 0
     STATE_PLAYING = 1
     STATE_GAMEOVER = 2
-    STATE_WIN = 3  # New state for winning the game
+    STATE_WIN = 3
 
     state = STATE_START
 
@@ -317,26 +333,19 @@ def main():
     collectibles = pygame.sprite.Group()
     boss_group = pygame.sprite.Group()
     boss_bullets = pygame.sprite.Group()
-
-    # Cloud group and instantiate some clouds for background enhancement
     all_clouds = pygame.sprite.Group()
-    for _ in range(5):  # Number of clouds simultaneously passing
+    for _ in range(5):
         cloud = Cloud()
         all_clouds.add(cloud)
 
     score = 0
     boss_spawned = False
     super_fireball_unlocked = False
-
-    boss_shoot_cooldown = 1500  # milliseconds
+    boss_shoot_cooldown = 1500
     last_boss_shot_time = 0
-
-    # Level text display tracking
     level_text = None
     level_text_start_time = 0
     level_text_duration = 0
-
-    # Track if level 2 and level 3 text already shown to trigger only once
     level_2_shown = False
     level_3_shown = False
 
@@ -351,9 +360,8 @@ def main():
 
             if state == STATE_START:
                 if event.type == pygame.KEYDOWN:
-                    # Start playing music on game start
                     try:
-                        pygame.mixer.music.play(-1)  # Loop indefinitely
+                        pygame.mixer.music.play(-1)
                     except:
                         pass
 
@@ -368,7 +376,6 @@ def main():
                     boss_group = pygame.sprite.Group()
                     boss_bullets = pygame.sprite.Group()
 
-                    # Reset clouds
                     all_clouds = pygame.sprite.Group()
                     for _ in range(5):
                         cloud = Cloud()
@@ -379,10 +386,9 @@ def main():
                     super_fireball_unlocked = False
 
                     state = STATE_PLAYING
-                    # Show Level 1 text for 5 seconds at start of game playing
                     level_text = "Level 1"
                     level_text_start_time = current_time
-                    level_text_duration = 5000  # 5 seconds
+                    level_text_duration = 5000
                     level_2_shown = False
                     level_3_shown = False
 
@@ -400,9 +406,16 @@ def main():
                             player.last_space_press_time = current_time
 
                     if event.key == pygame.K_f:
-                        projectile = Projectile(player.rect.right, player.rect.centery - 10, super_fire=super_fireball_unlocked)
-                        all_sprites.add(projectile)
-                        projectiles.add(projectile)
+                        if boss_spawned:
+                            y_offset = 10
+                            fireball = Projectile(player.rect.right, player.rect.centery - y_offset, super_fire=False)
+                            superfireball = Projectile(player.rect.right, player.rect.centery + y_offset, super_fire=True)
+                            all_sprites.add(fireball, superfireball)
+                            projectiles.add(fireball, superfireball)
+                        else:
+                            projectile = Projectile(player.rect.right, player.rect.centery - 10, super_fire=super_fireball_unlocked)
+                            all_sprites.add(projectile)
+                            projectiles.add(projectile)
 
             elif state == STATE_GAMEOVER or state == STATE_WIN:
                 if event.type == pygame.KEYDOWN:
@@ -418,7 +431,6 @@ def main():
                         boss_group = pygame.sprite.Group()
                         boss_bullets = pygame.sprite.Group()
 
-                        # Reset clouds
                         all_clouds = pygame.sprite.Group()
                         for _ in range(5):
                             cloud = Cloud()
@@ -428,33 +440,32 @@ def main():
                         boss_spawned = False
                         super_fireball_unlocked = False
 
-                        # Restart music on game restart
                         try:
                             pygame.mixer.music.play(-1)
                         except:
                             pass
 
                         state = STATE_PLAYING
-                        # Show Level 1 text on restart too
                         level_text = "Level 1"
                         level_text_start_time = current_time
-                        level_text_duration = 5000  # 5 seconds
+                        level_text_duration = 5000
                         level_2_shown = False
                         level_3_shown = False
                     elif event.key == pygame.K_q:
                         running = False
 
-        # If game over or win, stop the music
         if state == STATE_GAMEOVER or state == STATE_WIN:
             pygame.mixer.music.stop()
 
-        # Game logic and rendering
         if state == STATE_START:
-            screen.fill(WHITE)
-            draw_text_center("Side-Scrolling Game", font, BLACK, y_offset=-50)
-            draw_text_center("Press any key to start", small_font, BLACK, y_offset=20)
-            draw_text_center("Jump: Space (Double tap or Ctrl for double jump)", small_font, BLACK, y_offset=60)
-            draw_text_center("Shoot: F", small_font, BLACK, y_offset=90)
+            if menu_background:
+                screen.blit(menu_background, (0, 0))
+            else:
+                screen.fill(WHITE)
+            draw_text_center(screen, "Side-Scrolling Game", font, BLACK, y_offset=-50)
+            draw_text_center(screen, "Press any key to start", small_font, BLACK, y_offset=20)
+            draw_text_center(screen, "Jump: Space (Double tap or Ctrl for double jump)", small_font, BLACK, y_offset=60)
+            draw_text_center(screen, "Shoot: F", small_font, BLACK, y_offset=90)
             pygame.display.flip()
 
         elif state == STATE_PLAYING:
@@ -463,7 +474,6 @@ def main():
             boss_bullets.update()
             all_clouds.update()
 
-            # Spawn enemy2 if score >= 500 and not boss spawned
             if score >= 500 and not boss_spawned:
                 if not super_fireball_unlocked:
                     super_fireball_unlocked = True
@@ -474,10 +484,9 @@ def main():
                     if not level_2_shown:
                         level_text = "Level 2"
                         level_text_start_time = current_time
-                        level_text_duration = 4000  # 4 seconds
+                        level_text_duration = 4000
                         level_2_shown = True
 
-            # Spawn enemy3 if score >= 1200 and not boss spawned
             if score >= 1200 and not boss_spawned:
                 if len(enemies3) < 3 and random.randint(1, 100) < 8:
                     enemy3 = Enemy3()
@@ -486,16 +495,14 @@ def main():
                     if not level_3_shown:
                         level_text = "Level 3"
                         level_text_start_time = current_time
-                        level_text_duration = 4000  # 4 seconds
+                        level_text_duration = 4000
                         level_3_shown = True
 
-            # Spawn boss if score >= 1500 and not already spawned
             if score >= 1500 and not boss_spawned:
                 boss = BossEnemy()
                 all_sprites.add(boss)
                 boss_group.add(boss)
                 boss_spawned = True
-                # Remove regular enemies and enemy2 and enemy3 while boss active
                 for enemy in enemies:
                     enemy.kill()
                 for enemy2 in enemies2:
@@ -503,7 +510,6 @@ def main():
                 for enemy3 in enemies3:
                     enemy3.kill()
 
-            # Boss shooting logic
             if boss_spawned and (current_time - last_boss_shot_time) > boss_shoot_cooldown:
                 for b in boss_group:
                     bullet = BossBullet(b.rect.left, b.rect.centery)
@@ -511,7 +517,6 @@ def main():
                     boss_bullets.add(bullet)
                 last_boss_shot_time = current_time
 
-            # Spawn regular enemies if boss not active AND score < 500
             if not boss_spawned and score < 500:
                 spawn_chance = min(2 + score // 100, 5)
                 if random.randint(1, 100) < spawn_chance:
@@ -519,12 +524,10 @@ def main():
                     all_sprites.add(enemy)
                     enemies.add(enemy)
 
-            # Update enemies
             enemies.update()
             enemies2.update()
             enemies3.update()
 
-            # Projectile collisions
             for projectile in projectiles:
                 enemy_hits = pygame.sprite.spritecollide(projectile, enemies, False)
                 for enemy in enemy_hits:
@@ -545,7 +548,7 @@ def main():
 
                 enemy3_hits = pygame.sprite.spritecollide(projectile, enemies3, False)
                 for enemy3 in enemy3_hits:
-                    enemy3.health -= 25  # Enemy3 takes 25 damage per hit
+                    enemy3.health -= 25
                     projectile.kill()
                     if enemy3.health <= 0:
                         enemy3.kill()
@@ -559,9 +562,8 @@ def main():
                         boss.kill()
                         score += 500
                         boss_spawned = False
-                        state = STATE_WIN  # Switch to win screen on boss defeat
+                        state = STATE_WIN
 
-            # Enemies and player collisions
             if pygame.sprite.spritecollide(player, enemies, False):
                 player.take_damage(DAMAGE)
             if pygame.sprite.spritecollide(player, enemies2, False):
@@ -571,11 +573,9 @@ def main():
             if pygame.sprite.spritecollide(player, boss_group, False):
                 player.take_damage(DAMAGE + 10)
 
-            # Boss bullets and player collisions
             if pygame.sprite.spritecollide(player, boss_bullets, True):
                 player.take_damage(DAMAGE + 8)
 
-            # Collectible spawn and pickup
             if len(collectibles) < 3:
                 if random.randint(1, 100) < 5:
                     collectible = Collectible()
@@ -586,31 +586,21 @@ def main():
             for item in collected:
                 score += 50
 
-            # Clear screen
             screen.fill(WHITE)
-
-            # Draw clouds behind everything but above background
             all_clouds.draw(screen)
-
-            # Draw ground image at screen bottom
             screen.blit(ground_image, (0, SCREEN_HEIGHT - GROUND_HEIGHT))
-
-            # Draw all sprites
             all_sprites.draw(screen)
 
-            # Draw health bar
             health_bar_back = pygame.Rect(10, 10, 200, 25)
             health_bar_front = pygame.Rect(10, 10, 200 * (player.health / player.max_health), 25)
             pygame.draw.rect(screen, RED, health_bar_back)
             pygame.draw.rect(screen, GREEN, health_bar_front)
 
-            # Draw lives and score
             lives_text = small_font.render(f"Lives: {player.lives}", True, RED)
             score_text = small_font.render(f"Score: {score}", True, BLACK)
             screen.blit(lives_text, (10, 45))
             screen.blit(score_text, (SCREEN_WIDTH - 150, 10))
 
-            # Draw boss health bar if boss active
             if boss_spawned and len(boss_group) > 0:
                 boss = next(iter(boss_group))
                 boss_bar_back = pygame.Rect(SCREEN_WIDTH//2 - 100, 50, 200, 20)
@@ -620,43 +610,48 @@ def main():
                 boss_text = small_font.render("Boss Health", True, BLACK)
                 screen.blit(boss_text, (SCREEN_WIDTH//2 - boss_text.get_width()//2, 20))
 
-            # Draw level text if active and within duration
             if level_text is not None:
                 elapsed = current_time - level_text_start_time
                 if elapsed < level_text_duration:
                     large_font = pygame.font.SysFont("Arial", 72)
                     text_render = large_font.render(level_text, True, ORANGE)
                     text_rect = text_render.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 200))
-                    # Draw a slight shadow
                     shadow_render = large_font.render(level_text, True, BLACK)
                     shadow_rect = shadow_render.get_rect(center=(SCREEN_WIDTH//2 + 3, SCREEN_HEIGHT//2 - 197))
                     screen.blit(shadow_render, shadow_rect)
                     screen.blit(text_render, text_rect)
                 else:
-                    level_text = None  # expire level text
+                    level_text = None
 
             pygame.display.flip()
 
-            # Check game over, go to Game Over screen
             if player.lives <= 0:
                 state = STATE_GAMEOVER
 
         elif state == STATE_GAMEOVER:
-            screen.fill(WHITE)
-            draw_text_center("Game Over", font, RED, y_offset=-50)
-            draw_text_center(f"Final Score: {score}", small_font, BLACK, y_offset=0)
-            draw_text_center("Press R to Restart or Q to Quit", small_font, BLACK, y_offset=50)
+            if end_background:
+                screen.blit(end_background, (0, 0))
+            else:
+                screen.fill(WHITE)
+            draw_text_center(screen, "Game Over", font, RED, y_offset=-100)
+            draw_text_center(screen, f"Final Score: {score}", small_font, BLACK, y_offset=0)
+            draw_text_center(screen, "Press R to Restart or Q to Quit", small_font, BLACK, y_offset=50)
             pygame.display.flip()
 
         elif state == STATE_WIN:
-            screen.fill(WHITE)
-            draw_text_center("YOU WON!", font, GREEN, y_offset=-50)
-            draw_text_center(f"Final Score: {score}", small_font, BLACK, y_offset=0)
-            draw_text_center("Press R to Restart or Q to Quit", small_font, BLACK, y_offset=50)
+            if end_background:
+                screen.blit(end_background, (0, 0))
+            else:
+                screen.fill(WHITE)
+            draw_text_center(screen, "YOU WON!", font, GREEN, y_offset=-100)
+            draw_text_center(screen, f"Final Score: {score}", small_font, BLACK, y_offset=0)
+            draw_text_center(screen, "Press R to Restart or Q to Quit", small_font, BLACK, y_offset=50)
             pygame.display.flip()
+
+
 
     pygame.quit()
 
-
 if __name__ == "__main__":
     main()
+
